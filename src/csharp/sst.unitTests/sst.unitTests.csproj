@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>netcoreapp3.0</TargetFramework>
+
+        <IsPackable>false</IsPackable>
+
+        <RootNamespace>QResurgence.SST.UnitTests</RootNamespace>
+
+        <LangVersion>8</LangVersion>
+
+        <Company>QResurgence</Company>
+
+        <Product>SST.UnitTests</Product>
+
+        <AssemblyVersion>1.0.0.0</AssemblyVersion>
+
+        <FileVersion>1.0.0.0</FileVersion>
+
+        <AssemblyName>QResurgence.SST.UnitTests</AssemblyName>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="nunit" Version="3.6.1" />
+        <PackageReference Include="NUnit3TestAdapter" Version="3.15.1" />
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.4.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\sst\sst.csproj" />
+    </ItemGroup>
+
+</Project>

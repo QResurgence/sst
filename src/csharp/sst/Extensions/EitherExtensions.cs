@@ -64,10 +64,14 @@ namespace QResurgence.SST.Extensions
             this Either<TLeft, TRight> either,
             Func<TRight, TNewRight> predicateSatisfiedHandler,
             Func<TLeft> predicateNotSatisfiedHandler,
-            Func<TRight, bool> predicate) =>
-            !either.IsRight() || !predicate(either)
+            Func<TRight, bool> predicate)
+        {
+            if (!either.IsRight()) return new Left<TLeft, TNewRight>(either);
+
+            return !predicate(either)
                 ? (Either<TLeft, TNewRight>) new Left<TLeft, TNewRight>(predicateNotSatisfiedHandler())
                 : new Right<TLeft, TNewRight>(predicateSatisfiedHandler(either));
+        }
 
         /// <summary>
         ///     Evaluates the <paramref name="action" /> over the contained right value if the contained value is of

@@ -18,6 +18,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Text;
+
 #pragma warning disable 1591
 
 // ReSharper disable All
