@@ -1,3 +1,4 @@
+using System;
 using QResurgence.SST.Capability;
 using QResurgence.SST.Errors;
 using QResurgence.SST.Utilities;
@@ -7,7 +8,7 @@ namespace QResurgence.SST
     /// <summary>
     ///     Defines the client interface
     /// </summary>
-    public interface IClient
+    public interface IClient : IDisposable
     {
         /// <summary>
         ///     Gets the capability for use by the client defined by the <typeparamref name="TICapability" /> interface type,

@@ -3,7 +3,7 @@ namespace QResurgence.SST.Messages
     /// <summary>
     ///     Implement the error codes
     /// </summary>
-    public enum ErrorCode
+    internal enum ErrorCode
     {
         /// <summary>
         ///     Request denied error code
@@ -13,6 +13,8 @@ namespace QResurgence.SST.Messages
         /// <summary>
         ///     Invocation error error code
         /// </summary>
-        InvocationError = 1
+        InvocationError = 1,
+        ChallengeFailed,
+        EncryptionKeyAlreadySent
     }
 }

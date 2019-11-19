@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>netcoreapp2.2</TargetFramework>
+        <TargetFramework>netcoreapp3.0</TargetFramework>
         <AssemblyName>QResurgence.SST</AssemblyName>
         <RootNamespace>QResurgence.SST</RootNamespace>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
@@ -10,20 +10,21 @@
         <Company>QResurgence</Company>
         <AssemblyVersion>1.0.0.0</AssemblyVersion>
         <FileVersion>1.0.0.0</FileVersion>
+        <LangVersion>8</LangVersion>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
-      <DocumentationFile>bin\Debug\sst.xml</DocumentationFile>
+        <DocumentationFile>bin\Debug\sst.xml</DocumentationFile>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
-      <DebugSymbols>true</DebugSymbols>
-      <DocumentationFile>bin\Release\sst.xml</DocumentationFile>
+        <DebugSymbols>true</DebugSymbols>
+        <DocumentationFile>bin\Release\sst.xml</DocumentationFile>
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="NetMQ" Version="4.0.0.207" />
-      <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+        <PackageReference Include="NetMQ" Version="4.0.0.207" />
+        <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
     </ItemGroup>
 
 </Project>

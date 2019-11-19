@@ -31,7 +31,7 @@ namespace QResurgence.SST.Extensions
 
         /// <summary>
         ///     Implements the mapping of the <typeparamref name="TRight" /> value into the <typeparamref name="TNewRight" /> value
-        ///     when mapping can result in a <typeparamref name="TLeft" /> value or returns the container of the left value
+        ///     when mapping can result in a either <typeparamref name="TNewRight" /> value or <typeparamref name="TLeft" /> value
         /// </summary>
         /// <param name="either">The container</param>
         /// <param name="map">
@@ -42,9 +42,32 @@ namespace QResurgence.SST.Extensions
         /// <typeparam name="TRight">The right value type to be mapped</typeparam>
         /// <typeparam name="TNewRight">The right value type to be mapped to</typeparam>
         /// <returns>The resulting container type of the <typeparamref name="TLeft" /> or <typeparamref name="TNewRight" /> value</returns>
-        public static Either<TLeft, TNewRight> Map<TLeft, TRight, TNewRight>(this Either<TLeft, TRight> either,
+        public static Either<TLeft, TNewRight> Map<TLeft, TRight, TNewRight>(
+            this Either<TLeft, TRight> either,
             Func<TRight, Either<TLeft, TNewRight>> map) =>
             !either.IsRight() ? new Left<TLeft, TNewRight>(either) : map(either);
+
+        /// <summary>
+        ///     Implements conditional mapping of the <typeparamref name="TRight" /> value into the
+        ///     <typeparamref name="TNewRight" /> value
+        ///     when a predicate is satisfied
+        /// </summary>
+        /// <param name="either">The container</param>
+        /// <param name="predicateSatisfiedHandler">Handler evaluated if the predicate is satisfied</param>
+        /// <param name="predicateNotSatisfiedHandler">Handler evaluated if the predicate is not satisfied</param>
+        /// <param name="predicate">The predicate</param>
+        /// <typeparam name="TLeft">The left value type</typeparam>
+        /// <typeparam name="TRight">The right value type to be mapped</typeparam>
+        /// <typeparam name="TNewRight">The right value type to be mapped to</typeparam>
+        /// <returns>The resulting container type of the <typeparamref name="TLeft" /> or <typeparamref name="TNewRight" /> value</returns>
+        public static Either<TLeft, TNewRight> Map<TLeft, TRight, TNewRight>(
+            this Either<TLeft, TRight> either,
+            Func<TRight, TNewRight> predicateSatisfiedHandler,
+            Func<TLeft> predicateNotSatisfiedHandler,
+            Func<TRight, bool> predicate) =>
+            !either.IsRight() || !predicate(either)
+                ? (Either<TLeft, TNewRight>) new Left<TLeft, TNewRight>(predicateNotSatisfiedHandler())
+                : new Right<TLeft, TNewRight>(predicateSatisfiedHandler(either));
 
         /// <summary>
         ///     Evaluates the <paramref name="action" /> over the contained right value if the contained value is of

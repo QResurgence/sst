@@ -1,11 +1,11 @@
 using System;
-using System.Net;
 using System.Text;
 using NetMQ;
 using NetMQ.Sockets;
 using Newtonsoft.Json;
 using QResurgence.SST.Errors;
 using QResurgence.SST.Messages;
+using QResurgence.SST.Security;
 using QResurgence.SST.Utilities;
 
 namespace QResurgence.SST.Capability
@@ -18,20 +18,20 @@ namespace QResurgence.SST.Capability
     public class CapabilityClient<TArgument, TReturn>
     {
         private readonly CapabilityInfo _info;
-        private readonly int _port;
-        private readonly IPAddress _providerIp;
+        private readonly SecurityNegotiationClient _negotiator;
+        private readonly RequestSocket _socket;
 
         /// <summary>
         ///     Initializes an instance of the <see cref="CapabilityClient{TArgument,TReturn}" /> class
         /// </summary>
+        /// <param name="socket">The socket used for communication</param>
         /// <param name="info">The capability info</param>
-        /// <param name="providerIp">The IP address of the provider</param>
-        /// <param name="port">The port on which the provider is listening</param>
-        public CapabilityClient(CapabilityInfo info, IPAddress providerIp, int port)
+        /// <param name="negotiator">The security negotiator</param>
+        internal CapabilityClient(RequestSocket socket, CapabilityInfo info, SecurityNegotiationClient negotiator)
         {
+            _socket = socket;
             _info = info;
-            _providerIp = providerIp;
-            _port = port;
+            _negotiator = negotiator;
         }
 
         /// <summary>
@@ -41,26 +41,21 @@ namespace QResurgence.SST.Capability
         /// <returns>The return value</returns>
         public Either<IError, TReturn> Invoke(TArgument argument)
         {
-            using (var requestSocket = new RequestSocket())
+            _socket.SendMultipartMessage(CreateRequest(argument));
+
+            var response = _socket.ReceiveMultipartMessage();
+            var messageType = (MessageType) response.Pop().ConvertToInt32();
+
+            switch (messageType)
             {
-                requestSocket.Connect($"tcp://{_providerIp.MapToIPv4()}:{_port}");
-
-                requestSocket.SendMultipartMessage(CreateRequest(argument));
-
-                var response = requestSocket.ReceiveMultipartMessage();
-                var messageType = (MessageType) response.Pop().ConvertToInt32();
-
-                switch (messageType)
-                {
-                    case MessageType.CapabilityInvocationResult:
-                        return new Right<IError, TReturn>(
-                            JsonConvert.DeserializeObject<TReturn>(response.Pop().ConvertToString()));
-                    case MessageType.Error:
-                        var error = JsonConvert.DeserializeObject<ErrorMessage>(response.Pop().ConvertToString());
-                        return new Left<IError, TReturn>(ErrorUtilities.GetErrorByErrorCode(error.ErrorCode));
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
+                case MessageType.CapabilityInvocationResult:
+                    return new Right<IError, TReturn>(
+                        JsonConvert.DeserializeObject<TReturn>(response.Pop().ConvertToString()));
+                case MessageType.Error:
+                    var error = JsonConvert.DeserializeObject<ErrorMessage>(response.Pop().ConvertToString());
+                    return new Left<IError, TReturn>(ErrorUtilities.GetErrorByErrorCode(error.ErrorCode));
+                default:
+                    throw new ArgumentOutOfRangeException();
             }
         }
 
@@ -68,8 +63,8 @@ namespace QResurgence.SST.Capability
         {
             var request = new NetMQMessage();
             request.Append((int) MessageType.InvokeCapability);
-            request.Append(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(_info)));
-            request.Append(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(argument)));
+            request.Append(_negotiator.Encrypt(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(_info))));
+            request.Append(_negotiator.Encrypt(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(argument))));
 
             return request;
         }

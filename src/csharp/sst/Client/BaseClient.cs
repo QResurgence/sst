@@ -1,5 +1,4 @@
 using System;
-using System.Net;
 using System.Text;
 using NetMQ;
 using NetMQ.Sockets;
@@ -8,8 +7,8 @@ using QResurgence.SST.Capability;
 using QResurgence.SST.Errors;
 using QResurgence.SST.Extensions;
 using QResurgence.SST.Messages;
+using QResurgence.SST.Security;
 using QResurgence.SST.Utilities;
-using ErrorCode = QResurgence.SST.Messages.ErrorCode;
 
 namespace QResurgence.SST.Client
 {
@@ -18,61 +17,65 @@ namespace QResurgence.SST.Client
     /// </summary>
     public abstract class BaseClient : IClient
     {
+        private readonly SecurityNegotiationClient _negotiator;
+        private readonly RequestSocket _requestSocket;
+
+        /// <summary>
+        ///     Initializes an instance of the <see cref="BaseClient" /> class
+        /// </summary>
+        protected BaseClient()
+        {
+            _negotiator = new SecurityNegotiationClient();
+            _requestSocket = new RequestSocket();
+            _requestSocket.Options.Identity = Guid.NewGuid().ToByteArray();
+            _requestSocket.Connect("tcp://127.0.0.1:9000");
+        }
+
         /// <inheritdoc />
         public Either<IError, CapabilityClient<TArgument, TReturn>> GetCapability<TICapability, TArgument, TReturn>()
             where TICapability : ICapabilityDefinition
         {
             var name = CapabilityUtilities.GetCapabilityName<TICapability>();
 
-            using (var requestSocket = new RequestSocket())
-            {
-                requestSocket.Connect("tcp://127.0.0.1:9000");
-
-                return GetCapabilityFromServer(requestSocket, name)
-                    .Map(info => new CapabilityClient<TArgument, TReturn>(info, IPAddress.Loopback, 9000));
-            }
+            return !_negotiator.Negotiate(_requestSocket)
+                ? new Left<IError, CapabilityClient<TArgument, TReturn>>(new UnsuccessfulNegotiationWithServer())
+                : GetCapabilityFromServer(name)
+                    .Map(info => new CapabilityClient<TArgument, TReturn>(_requestSocket, info, _negotiator));
         }
 
-        private Either<IError, CapabilityInfo> GetCapabilityFromServer(RequestSocket socket, string name)
+        /// <inheritdoc />
+        public void Dispose()
         {
-            socket.SendMultipartMessage(CreateGetCapabilityMessage(name));
+            _requestSocket?.Dispose();
+        }
 
-            var response = socket.ReceiveMultipartMessage();
+        private Either<IError, CapabilityInfo> GetCapabilityFromServer(string name)
+        {
+            var message = CreateGetCapabilityMessage(name);
+            _requestSocket.SendMultipartMessage(message);
+
+            var response = _requestSocket.ReceiveMultipartMessage();
             var messageType = (MessageType) response.Pop().ConvertToInt32();
 
             switch (messageType)
             {
                 case MessageType.GrantCapability:
-                    var info = JsonConvert.DeserializeObject<CapabilityInfo>(
-                        Encoding.UTF8.GetString(response.Pop().ToByteArray()));
+                    var infoJson = _negotiator.Decrypt(response.Pop().ToByteArray());
+                    var info = JsonConvert.DeserializeObject<CapabilityInfo>(Encoding.UTF8.GetString(infoJson));
                     return new Right<IError, CapabilityInfo>(info);
                 case MessageType.Error:
-                    var error = JsonConvert.DeserializeObject<ErrorMessage>(
-                        Encoding.UTF8.GetString(response.Pop().ToByteArray()));
-                    return new Left<IError, CapabilityInfo>(GetError(error.ErrorCode));
+                    var errorContent = response.Pop().ToByteArray();
+                    return new Left<IError, CapabilityInfo>(ErrorMessageReceiver.GetError(errorContent));
                 default:
-                    throw new ArgumentOutOfRangeException();
+                    return new Left<IError, CapabilityInfo>(new UnexpectedMessageError());
             }
         }
 
-        private IError GetError(ErrorCode errorCode)
-        {
-            switch (errorCode)
-            {
-                case ErrorCode.RequestDenied:
-                    return new RequestDeniedError();
-                case ErrorCode.InvocationError:
-                    return new CapabilityInvocationError();
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(errorCode), errorCode, null);
-            }
-        }
-
-        private static NetMQMessage CreateGetCapabilityMessage(string name)
+        private NetMQMessage CreateGetCapabilityMessage(string name)
         {
             var request = new NetMQMessage();
             request.Append((int) MessageType.GetCapability);
-            request.Append(SerializeCapabilityInfo(new CapabilityInfo(name)));
+            request.Append(_negotiator.Encrypt(SerializeCapabilityInfo(new CapabilityInfo(name))));
             return request;
         }
 

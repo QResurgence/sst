@@ -6,6 +6,7 @@ using Newtonsoft.Json;
 using QResurgence.SST.Capability;
 using QResurgence.SST.Exceptions;
 using QResurgence.SST.Messages;
+using QResurgence.SST.Security;
 using QResurgence.SST.Utilities;
 using ErrorCode = QResurgence.SST.Messages.ErrorCode;
 
@@ -16,6 +17,7 @@ namespace QResurgence.SST.Server
     /// </summary>
     public abstract class BaseServer : IServer
     {
+        private readonly SecurityNegotiationServer _negotiator;
         private readonly NetMQPoller _poller;
         private readonly CapabilityRegistry _registry;
         private readonly RouterSocket _router;
@@ -26,6 +28,8 @@ namespace QResurgence.SST.Server
         protected BaseServer()
         {
             _registry = new CapabilityRegistry();
+
+            _negotiator = new SecurityNegotiationServer();
 
             _router = new RouterSocket();
             _router.Bind("tcp://*:9000");
@@ -70,18 +74,35 @@ namespace QResurgence.SST.Server
         {
             var request = e.Socket.ReceiveMultipartMessage();
             var requester = request.Pop().ToByteArray();
+            var requesterIdentity = new Guid(requester);
             RemoveNullFrame(request);
             var requestType = (MessageType) request.Pop().ConvertToInt32();
-            var info = DeserializeCapabilityInfo(request.Pop().ToByteArray());
+
 
             switch (requestType)
             {
+                case MessageType.RequestPublicKey:
+                case MessageType.SendEncryptionKey:
+                case MessageType.ChallengeResponse:
+                {
+                    var requestContent = request.Pop().ToByteArray();
+                    _negotiator.Negotiate(requester, requesterIdentity, requestType, requestContent, _router);
+                }
+                    break;
                 case MessageType.GetCapability:
-                    HandleGetCapability(requester, info);
+                {
+                    var decryptedInfoJson = _negotiator.Decrypt(requesterIdentity, request.Pop().ToByteArray());
+                    var info = DeserializeCapabilityInfo(decryptedInfoJson);
+                    HandleGetCapability(requester, requesterIdentity, info);
+                }
                     break;
                 case MessageType.InvokeCapability:
-                    var requestContent = request.Pop().ToByteArray();
+                {
+                    var decryptedInfoJson = _negotiator.Decrypt(requesterIdentity, request.Pop().ToByteArray());
+                    var info = DeserializeCapabilityInfo(decryptedInfoJson);
+                    var requestContent = _negotiator.Decrypt(requesterIdentity, request.Pop().ToByteArray());
                     HandleInvokeCapability(requester, info, requestContent);
+                }
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -97,7 +118,7 @@ namespace QResurgence.SST.Server
         {
             _registry.Get(info.Name)
                 .Just(capability => { InvokeCapability(requester, capability, requestContent); })
-                .Nothing(() => { SendError(requester, ErrorCode.RequestDenied); });
+                .Nothing(() => { ErrorMessageSender.SendError(requester, _router, ErrorCode.RequestDenied); });
         }
 
         private void InvokeCapability(byte[] destination, ICapability capability, byte[] arguments)
@@ -114,35 +135,25 @@ namespace QResurgence.SST.Server
             }
             catch (Exception)
             {
-                SendError(destination, ErrorCode.InvocationError);
+                ErrorMessageSender.SendError(destination, _router, ErrorCode.InvocationError);
             }
         }
 
-        private void HandleGetCapability(byte[] requester, CapabilityInfo info)
+        private void HandleGetCapability(byte[] requester, Guid requesterIdentity, CapabilityInfo info)
         {
             _registry.Get(info.Name)
-                .Just(capability => { GrantCapability(requester, info); })
-                .Nothing(() => { SendError(requester, ErrorCode.RequestDenied); });
+                .Just(capability => { GrantCapability(requesterIdentity, requester, info); })
+                .Nothing(() => { ErrorMessageSender.SendError(requester, _router, ErrorCode.RequestDenied); });
         }
 
-        private void GrantCapability(byte[] destination, CapabilityInfo info)
+        private void GrantCapability(Guid requesterIdentity, byte[] destination, CapabilityInfo info)
         {
+            var encryptedInfoJson = _negotiator.Encrypt(requesterIdentity, JsonConvert.SerializeObject(info));
             var response = new NetMQMessage();
             response.Append(destination);
             response.AppendEmptyFrame();
             response.Append((int) MessageType.GrantCapability);
-            response.Append(JsonConvert.SerializeObject(info));
-
-            _router.SendMultipartMessage(response);
-        }
-
-        private void SendError(byte[] destination, ErrorCode errorCode)
-        {
-            var response = new NetMQMessage();
-            response.Append(destination);
-            response.AppendEmptyFrame();
-            response.Append((int) MessageType.Error);
-            response.Append(JsonConvert.SerializeObject(new ErrorMessage(errorCode)));
+            response.Append(encryptedInfoJson);
 
             _router.SendMultipartMessage(response);
         }

@@ -8,6 +8,8 @@ namespace QResurgence.SST.Utilities
     /// <typeparam name="T">The type of the value maybe contained</typeparam>
     public class Maybe<T>
     {
+        private readonly T _content;
+
         /// <summary>
         ///     Initializes an instance of the <see cref="Maybe{T}" /> class when it contains nothing
         /// </summary>
@@ -21,10 +23,8 @@ namespace QResurgence.SST.Utilities
         /// <param name="content">The value</param>
         public Maybe(T content)
         {
-            Content = content;
+            _content = content;
         }
-
-        private T Content { get; }
 
         /// <summary>
         ///     Evaluates the handler if the container contains a value
@@ -33,9 +33,9 @@ namespace QResurgence.SST.Utilities
         /// <returns>The container</returns>
         public Maybe<T> Just(Action<T> handler)
         {
-            if (Content == null) return this;
+            if (_content == null) return this;
 
-            handler?.Invoke(Content);
+            handler?.Invoke(_content);
             return this;
         }
 
@@ -45,17 +45,9 @@ namespace QResurgence.SST.Utilities
         /// <param name="handler">The handler</param>
         public void Nothing(Action handler)
         {
-            if (Content != null) return;
+            if (_content != null) return;
 
             handler?.Invoke();
         }
-
-
-        //public static implicit operator T(Maybe<T> maybe)
-        //{
-        //    if (maybe.Content == null) throw new Exception("Cannot cast nothing to something.");
-
-        //    return maybe.Content;
-        //}
     }
 }
