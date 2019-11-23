@@ -1,4 +1,4 @@
-namespace QResurgence.SST.example
+namespace QResurgence.SST.UnitTests.TestImplementation
 {
     internal class AdditionArguments
     {

@@ -1,7 +1,7 @@
 using QResurgence.SST.Attribute;
 using QResurgence.SST.Capability;
 
-namespace QResurgence.SST.example
+namespace QResurgence.SST.UnitTests.TestImplementation
 {
     [Capability("Addition")]
     internal class AdditionCapability : BaseCapability<AdditionArguments, AdditionReturnValue>, IAdditionCapability
