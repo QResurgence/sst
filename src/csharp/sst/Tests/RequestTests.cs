@@ -8,14 +8,8 @@ using ErrorCode = QResurgence.SST.Messages.ErrorCode;
 
 namespace QResurgence.SST.Tests
 {
-    /// <summary>
-    /// Defines tests for request messages
-    /// </summary>
-    public class RequestTests
+    internal class RequestTests
     {
-        /// <summary>
-        /// Test for creating request messages with a payload
-        /// </summary>
         [Test]
         public void RequestCreateWithPayloadTest()
         {
@@ -31,9 +25,6 @@ namespace QResurgence.SST.Tests
             Assert.AreEqual(ErrorCode.InvocationError, errorCode);
         }
         
-        /// <summary>
-        /// Test for creating request messages without a payload
-        /// </summary>
         [Test]
         public void RequestCreateWithoutPayloadTest()
         {
@@ -47,10 +38,7 @@ namespace QResurgence.SST.Tests
             var payload = request.Pop().ToByteArray();
             Assert.AreEqual(0, payload.Length);
         }
-
-        /// <summary>
-        /// Test for reading requests with a payload
-        /// </summary>
+        
         [Test]
         public void RequestReadWithPayloadTest()
         {
