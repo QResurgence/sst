@@ -21,15 +21,37 @@ The provider can grant the client the requested capability. If so, the client ca
 
 There are several implementations of the toolbox in following languages:
 
-- C
-- C++
-- C# (.NET Core)
-- Go
-- Haskell
-- Perl
+- C# (.NET Core) - In progress
+- C++ - Not implemented
+- C - Not implemented
+- Go - Not implemented
+- Haskell - Not implemented
+- Perl - Not implemented
 
 Underlying communication is supported by ZeroMQ (NetMQ for C# implementation).
 
 Other languages may be supported at a later time.
 
 Contributions and suggestions are welcome.
+
+SST will live at head. If you like it then you should have put a test on it.
+
+Zero warning policy.
+
+In general development cycle should look like this:
+
+- Either implement a change and write a test for it, or
+- Write a test, then implement a the change to make the test pass. (TDD will not be strictly enforced)
+- You must see all the tests pass
+- Commit and repeat previous steps until satisfied
+  - Commit messages should have a main headline at least
+  - If there are any details make an empty line beneath the headline and write the details as notes starting with "- " on each new line
+- Do code cleanup
+- Run code inspection, make sure there are no warnings (treating warnings like errors helps with this)
+- Run all tests. Fix any failing tests.
+- Repeat previous two steps until there are no warnings and all tests are passing.
+- Push
+
+Any contributions should be made by forking the repo and creating a pull request.
+Give a meaningful name to the pull request.
+Be sure to merge with upstream before making a pull request.
