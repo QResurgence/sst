@@ -8,8 +8,8 @@ namespace QResurgence.SST
         /// <summary>
         ///     Invokes the capability
         /// </summary>
-        /// <param name="arguments">The byte array of the JSON string representing the capability invocation arguments</param>
-        /// <returns>The byte array of the JSON string representing the capability invocation return value</returns>
-        byte[] Invoke(byte[] arguments);
+        /// <param name="argumentsJson">The JSON string representing the capability invocation arguments</param>
+        /// <returns>The JSON string representing the capability invocation return value</returns>
+        string Invoke(string argumentsJson);
     }
 }

@@ -19,7 +19,7 @@ namespace QResurgence.SST.Client
     {
         private readonly SecurityNegotiationClient _negotiator;
         private readonly RequestSocket _requestSocket;
-        private SymetricEncryption _encryptor;
+        private readonly SymetricEncryption _encryptor;
 
         /// <summary>
         ///     Initializes an instance of the <see cref="BaseClient" /> class

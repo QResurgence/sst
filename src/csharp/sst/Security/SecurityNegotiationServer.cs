@@ -13,7 +13,7 @@ namespace QResurgence.SST.Security
 {
     internal class SecurityNegotiationServer
     {
-        private readonly Dictionary<Guid, ChaCha20> _encryptionKeys;
+        private readonly Dictionary<Guid, SymetricEncryption> _encryptionKeys;
         private readonly Dictionary<Guid, Solution> _solutions;
         private readonly AsymetricEncryptionServer _encryptionServer;
 
@@ -21,7 +21,7 @@ namespace QResurgence.SST.Security
         {
             _encryptionServer = new AsymetricEncryptionServer();
 
-            _encryptionKeys = new Dictionary<Guid, ChaCha20>();
+            _encryptionKeys = new Dictionary<Guid, SymetricEncryption>();
             _solutions = new Dictionary<Guid, Solution>();
         }
 
@@ -39,10 +39,10 @@ namespace QResurgence.SST.Security
         }
 
         public byte[] Encrypt(Guid requesterIdentity, string jsonData) =>
-            _encryptionKeys[requesterIdentity].EncryptString(jsonData);
+            _encryptionKeys[requesterIdentity].Encrypt(jsonData);
 
-        public byte[] Decrypt(Guid requesterIdentity, byte[] data) =>
-            _encryptionKeys[requesterIdentity].DecryptBytes(data);
+        public string Decrypt(Guid requesterIdentity, byte[] data) =>
+            _encryptionKeys[requesterIdentity].Decrypt(data);
 
         private void HandleMessage(byte[] requester, MessageType requestType, byte[] requestContent,
             RouterSocket router, Guid requesterIdentity)
@@ -72,7 +72,7 @@ namespace QResurgence.SST.Security
                     ErrorMessageSender.SendError(requester, router, ErrorCode.ChallengeFailed);
             }
 
-            var solutionDecryptedJson = Encoding.UTF8.GetString(Decrypt(requesterIdentity, requestContent));
+            var solutionDecryptedJson = Decrypt(requesterIdentity, requestContent);
 
             if (ChallengeResponseIsCorrect(requesterIdentity,
                 JsonConvert.DeserializeObject<Solution>(solutionDecryptedJson)))
@@ -155,7 +155,7 @@ namespace QResurgence.SST.Security
             {
                 if (_encryptionKeys.ContainsKey(requesterIdentity)) _encryptionKeys.Remove(requesterIdentity);
 
-                _encryptionKeys.Add(requesterIdentity, new ChaCha20(encryptionKey.Key, encryptionKey.Nonce, 1));
+                _encryptionKeys.Add(requesterIdentity, new SymetricEncryption(encryptionKey));
             }
         }
 

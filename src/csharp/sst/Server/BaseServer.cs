@@ -114,14 +114,14 @@ namespace QResurgence.SST.Server
             request.Pop();
         }
 
-        private void HandleInvokeCapability(byte[] requester, CapabilityInfo info, byte[] requestContent)
+        private void HandleInvokeCapability(byte[] requester, CapabilityInfo info, string requestContentJson)
         {
             _registry.Get(info.Name)
-                .Just(capability => { InvokeCapability(requester, capability, requestContent); })
+                .Just(capability => { InvokeCapability(requester, capability, requestContentJson); })
                 .Nothing(() => { ErrorMessageSender.SendError(requester, _router, ErrorCode.RequestDenied); });
         }
 
-        private void InvokeCapability(byte[] destination, ICapability capability, byte[] arguments)
+        private void InvokeCapability(byte[] destination, ICapability capability, string arguments)
         {
             try
             {
@@ -158,7 +158,7 @@ namespace QResurgence.SST.Server
             _router.SendMultipartMessage(response);
         }
 
-        private static CapabilityInfo DeserializeCapabilityInfo(byte[] requestContent) =>
-            JsonConvert.DeserializeObject<CapabilityInfo>(Encoding.UTF8.GetString(requestContent));
+        private static CapabilityInfo DeserializeCapabilityInfo(string infoJson) =>
+            JsonConvert.DeserializeObject<CapabilityInfo>(infoJson);
     }
 }

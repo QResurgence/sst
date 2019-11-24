@@ -11,12 +11,8 @@ namespace QResurgence.SST.Capability
     public abstract class BaseCapability<TArguments, TReturn> : ICapability
     {
         /// <inheritdoc />
-        public byte[] Invoke(byte[] argument) =>
-            Encoding.UTF8.GetBytes(
-                Serialize(
-                    Invoke(
-                        Deserialize(
-                            Encoding.UTF8.GetString(argument)))));
+        public string Invoke(string argumentJson) =>
+            Serialize(Invoke(Deserialize(argumentJson)));
 
         /// <summary>
         ///     Invokes the capability with correct types
