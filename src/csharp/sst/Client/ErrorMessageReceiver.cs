@@ -10,15 +10,12 @@ namespace QResurgence.SST.Client
         public static IError GetError(byte[] errorContent)
         {
             var error = JsonConvert.DeserializeObject<ErrorCode>(Encoding.UTF8.GetString(errorContent));
-            switch (error)
+            return error switch
             {
-                case ErrorCode.RequestDenied:
-                    return new RequestDeniedError();
-                case ErrorCode.InvocationError:
-                    return new CapabilityInvocationError();
-                default:
-                    return new UnknownError();
-            }
+                ErrorCode.RequestDenied => (IError) new RequestDeniedError(),
+                ErrorCode.InvocationError => new CapabilityInvocationError(),
+                _ => new UnknownError()
+            };
         }
     }
 }

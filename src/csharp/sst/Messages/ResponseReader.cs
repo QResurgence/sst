@@ -12,7 +12,7 @@ namespace QResurgence.SST.Messages
         {
             return Read<object>(decryptor, message);
         }
-        
+
         public static Response<T> Read<T>(IDecryptor decryptor, NetMQMessage message)
         {
             // Frame 0: Message type
@@ -23,19 +23,18 @@ namespace QResurgence.SST.Messages
 
             var payload = default(T);
             if (!message.First.IsEmpty)
-            {
                 payload = JsonConvert.DeserializeObject<T>(decryptor.Decrypt(message.Pop().ToByteArray()));
-            }
-            
+
             return new Response<T>(type, payload);
         }
 
-        public static Either<Response<ErrorCode>, Response<T>> Read<T>(IDecryptor decryptorLeft, IDecryptor decryptorRight, NetMQMessage message)
+        public static Either<Response<ErrorCode>, Response<T>> Read<T>(IDecryptor decryptorLeft,
+            IDecryptor decryptorRight, NetMQMessage message)
         {
             // Frame 0: Message type
             // Frame 1: Payload
             Debug.Assert(message.FrameCount == 2);
-            
+
             var type = (MessageType) message.First.ConvertToInt32();
 
             return type == MessageType.Error

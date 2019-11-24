@@ -5,7 +5,7 @@ namespace QResurgence.SST.Security
 {
     internal class SymetricEncryption : IEncryptor, IDecryptor
     {
-        private ChaCha20 _encryptor;
+        private readonly ChaCha20 _encryptor;
 
         public SymetricEncryption()
         {
@@ -21,20 +21,25 @@ namespace QResurgence.SST.Security
 
         public EncryptionKey EncryptionKey { get; }
 
+        public string Decrypt(byte[] payload)
+        {
+            return _encryptor.DecryptUTF8ByteArray(payload);
+        }
+
         public byte[] Encrypt(string payloadJson)
         {
             return _encryptor.EncryptString(payloadJson);
         }
 
-        public string Decrypt(byte[] payload)
+        private static byte[] GenerateEncryptionKey()
         {
-            return _encryptor.DecryptUTF8ByteArray(payload);
-        }
-        
-        private static byte[] GenerateEncryptionKey() =>
-            Guid.NewGuid().ToByteArray()
+            return Guid.NewGuid().ToByteArray()
                 .Aggregate(Guid.NewGuid().ToByteArray(), (current, b) => current.Append(b).ToArray());
-        
-        private byte[] GenerateNonce() => Guid.NewGuid().ToByteArray().Take(12).ToArray();
+        }
+
+        private static byte[] GenerateNonce()
+        {
+            return Guid.NewGuid().ToByteArray().Take(12).ToArray();
+        }
     }
 }

@@ -1,4 +1,3 @@
-using System;
 using NUnit.Framework;
 using QResurgence.SST.Errors;
 using QResurgence.SST.Extensions;
@@ -34,14 +33,14 @@ namespace QResurgence.SST.UnitTests
                     .Fold(_ => gotOtherError = true, error => error is UnknownMessageError)
                     .Fold(_ => gotOtherError = true, error => error is UnknownError)
                     .Fold(_ => finishedUnsuccessfully = true);
-                
+
                 Assert.True(gotCorrectAnswer);
                 Assert.False(gotCalculationError);
                 Assert.False(gotOtherError);
                 Assert.False(finishedUnsuccessfully);
             }
         }
-        
+
         [Test]
         public void ImplementationIncorrectTest()
         {
@@ -68,7 +67,7 @@ namespace QResurgence.SST.UnitTests
                     .Fold(_ => gotOtherError = true, error => error is UnknownMessageError)
                     .Fold(_ => gotOtherError = true, error => error is UnknownError)
                     .Fold(_ => finishedUnsuccessfully = true);
-                
+
                 Assert.False(gotCorrectAnswer);
                 Assert.True(gotCalculationError);
                 Assert.False(gotOtherError);
@@ -102,7 +101,7 @@ namespace QResurgence.SST.UnitTests
                     .Fold(_ => gotOtherError = true, error => error is UnknownMessageError)
                     .Fold(_ => gotOtherError = true, error => error is UnknownError)
                     .Fold(_ => finishedUnsuccessfully = true);
-                
+
                 Assert.False(gotCorrectAnswer);
                 Assert.False(gotCalculationError);
                 Assert.True(gotOtherError);

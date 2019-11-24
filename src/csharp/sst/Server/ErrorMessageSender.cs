@@ -10,7 +10,8 @@ namespace QResurgence.SST.Server
     {
         public static void SendError(byte[] destination, NetMQSocket socket, ErrorCode errorCode)
         {
-            var response = ResponseCreator.Create(new NoEncryption(), destination, MessageType.Error, JsonConvert.SerializeObject(errorCode));
+            var response = ResponseCreator.Create(new NoEncryption(), destination, MessageType.Error,
+                JsonConvert.SerializeObject(errorCode));
 
             socket.SendMultipartMessage(response);
         }

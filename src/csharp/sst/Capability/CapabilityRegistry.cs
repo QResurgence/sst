@@ -12,7 +12,10 @@ namespace QResurgence.SST.Capability
             _capabilities = new Dictionary<string, ICapability>();
         }
 
-        public bool Contains(string name) => _capabilities.ContainsKey(name);
+        public bool Contains(string name)
+        {
+            return _capabilities.ContainsKey(name);
+        }
 
         public void Add<TCapability>(string name, TCapability capability)
             where TCapability : ICapability, new()
@@ -20,9 +23,11 @@ namespace QResurgence.SST.Capability
             _capabilities.Add(name, capability);
         }
 
-        public Maybe<ICapability> Get(string name) =>
-            _capabilities.ContainsKey(name)
+        public Maybe<ICapability> Get(string name)
+        {
+            return _capabilities.ContainsKey(name)
                 ? new Maybe<ICapability>(_capabilities[name])
                 : new Nothing<ICapability>();
+        }
     }
 }

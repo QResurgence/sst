@@ -1,5 +1,4 @@
 using System;
-using System.Text;
 using NetMQ;
 using NetMQ.Sockets;
 using Newtonsoft.Json;
@@ -91,16 +90,19 @@ namespace QResurgence.SST.Server
                     break;
                 case MessageType.GetCapability:
                 {
-                    var decryptedInfoJson = _negotiator.GetDecryptorFor(requesterIdentity).Decrypt(request.Pop().ToByteArray());
+                    var decryptedInfoJson = _negotiator.GetDecryptorFor(requesterIdentity)
+                        .Decrypt(request.Pop().ToByteArray());
                     var info = DeserializeCapabilityInfo(decryptedInfoJson);
                     HandleGetCapability(requester, requesterIdentity, info);
                 }
                     break;
                 case MessageType.InvokeCapability:
                 {
-                    var decryptedInfoJson = _negotiator.GetDecryptorFor(requesterIdentity).Decrypt(request.Pop().ToByteArray());
+                    var decryptedInfoJson = _negotiator.GetDecryptorFor(requesterIdentity)
+                        .Decrypt(request.Pop().ToByteArray());
                     var info = DeserializeCapabilityInfo(decryptedInfoJson);
-                    var requestContent = _negotiator.GetDecryptorFor(requesterIdentity).Decrypt(request.Pop().ToByteArray());
+                    var requestContent = _negotiator.GetDecryptorFor(requesterIdentity)
+                        .Decrypt(request.Pop().ToByteArray());
                     HandleInvokeCapability(requester, requesterIdentity, info, requestContent);
                 }
                     break;
@@ -114,19 +116,22 @@ namespace QResurgence.SST.Server
             request.Pop();
         }
 
-        private void HandleInvokeCapability(byte[] requester, Guid requesterIdentity, CapabilityInfo info, string requestContentJson)
+        private void HandleInvokeCapability(byte[] requester, Guid requesterIdentity, CapabilityInfo info,
+            string requestContentJson)
         {
             _registry.Get(info.Name)
                 .Just(capability => { InvokeCapability(requester, requesterIdentity, capability, requestContentJson); })
                 .Nothing(() => { ErrorMessageSender.SendError(requester, _router, ErrorCode.RequestDenied); });
         }
 
-        private void InvokeCapability(byte[] destination, Guid requesterIdentity, ICapability capability, string arguments)
+        private void InvokeCapability(byte[] destination, Guid requesterIdentity, ICapability capability,
+            string arguments)
         {
             try
             {
                 var encryptor = _negotiator.GetEncryptorFor(requesterIdentity);
-                var response = ResponseCreator.Create(encryptor, destination, MessageType.CapabilityInvocationResult, capability.Invoke(arguments));
+                var response = ResponseCreator.Create(encryptor, destination, MessageType.CapabilityInvocationResult,
+                    capability.Invoke(arguments));
 
                 _router.SendMultipartMessage(response);
             }
@@ -153,7 +158,9 @@ namespace QResurgence.SST.Server
             _router.SendMultipartMessage(response);
         }
 
-        private static CapabilityInfo DeserializeCapabilityInfo(string infoJson) =>
-            JsonConvert.DeserializeObject<CapabilityInfo>(infoJson);
+        private static CapabilityInfo DeserializeCapabilityInfo(string infoJson)
+        {
+            return JsonConvert.DeserializeObject<CapabilityInfo>(infoJson);
+        }
     }
 }

@@ -8,7 +8,7 @@ namespace QResurgence.SST.Messages
             Type = type;
             Payload = payload;
         }
-        
+
         public byte[] From { get; }
 
         public MessageType Type { get; }

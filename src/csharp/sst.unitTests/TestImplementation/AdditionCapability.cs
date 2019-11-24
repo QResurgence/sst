@@ -6,7 +6,9 @@ namespace QResurgence.SST.UnitTests.TestImplementation
     [Capability("Addition")]
     internal class AdditionCapability : BaseCapability<AdditionArguments, AdditionReturnValue>, IAdditionCapability
     {
-        protected override AdditionReturnValue Invoke(AdditionArguments arguments) =>
-            new AdditionReturnValue(arguments.Left + arguments.Right);
+        protected override AdditionReturnValue Invoke(AdditionArguments arguments)
+        {
+            return new AdditionReturnValue(arguments.Left + arguments.Right);
+        }
     }
 }

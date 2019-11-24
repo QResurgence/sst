@@ -1,14 +1,9 @@
-using System;
-using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
 using NetMQ;
 using NetMQ.Sockets;
 using Newtonsoft.Json;
 using QResurgence.SST.Extensions;
 using QResurgence.SST.Messages;
 using QResurgence.SST.Utilities;
-using ErrorCode = NetMQ.ErrorCode;
 
 namespace QResurgence.SST.Security
 {
@@ -20,12 +15,6 @@ namespace QResurgence.SST.Security
         {
             _encryptor = encryptor;
         }
-
-        private byte[] GenerateNonce() => Guid.NewGuid().ToByteArray().Take(12).ToArray();
-
-        private static byte[] GenerateEncryptionKey() =>
-            Guid.NewGuid().ToByteArray()
-                .Aggregate(Guid.NewGuid().ToByteArray(), (current, b) => current.Append(b).ToArray());
 
         public bool Negotiate(RequestSocket requestSocket)
         {

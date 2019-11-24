@@ -4,9 +4,12 @@ using QResurgence.SST.Capability;
 namespace QResurgence.SST.UnitTests.TestImplementation
 {
     [Capability("Addition")]
-    internal class AdditionIncorrectCapability : BaseCapability<AdditionArguments, AdditionReturnValue>, IAdditionCapability
+    internal class AdditionIncorrectCapability : BaseCapability<AdditionArguments, AdditionReturnValue>,
+        IAdditionCapability
     {
-        protected override AdditionReturnValue Invoke(AdditionArguments arguments) => 
-            new AdditionReturnValue(arguments.Left + arguments.Right - 1);
+        protected override AdditionReturnValue Invoke(AdditionArguments arguments)
+        {
+            return new AdditionReturnValue(arguments.Left + arguments.Right - 1);
+        }
     }
 }

@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Security.Cryptography;
-using System.Text;
 using NetMQ;
 using NetMQ.Sockets;
 using Newtonsoft.Json;
@@ -13,9 +11,9 @@ namespace QResurgence.SST.Security
 {
     internal class SecurityNegotiationServer
     {
+        private readonly AsymetricDecryptor _decryptor;
         private readonly Dictionary<Guid, SymetricEncryption> _encryptionKeys;
         private readonly Dictionary<Guid, Solution> _solutions;
-        private readonly AsymetricDecryptor _decryptor;
 
         public SecurityNegotiationServer()
         {
@@ -38,11 +36,15 @@ namespace QResurgence.SST.Security
             }
         }
 
-        public IEncryptor GetEncryptorFor(Guid requesterIdentity) =>
-            _encryptionKeys[requesterIdentity];
+        public IEncryptor GetEncryptorFor(Guid requesterIdentity)
+        {
+            return _encryptionKeys[requesterIdentity];
+        }
 
-        public IDecryptor GetDecryptorFor(Guid requesterIdentity) =>
-            _encryptionKeys[requesterIdentity];
+        public IDecryptor GetDecryptorFor(Guid requesterIdentity)
+        {
+            return _encryptionKeys[requesterIdentity];
+        }
 
         private void HandleMessage(byte[] requester, MessageType requestType, byte[] requestContent,
             RouterSocket router, Guid requesterIdentity)
@@ -86,7 +88,8 @@ namespace QResurgence.SST.Security
             ErrorMessageSender.SendError(requester, router, ErrorCode.ChallengeFailed);
         }
 
-        private void HandleSendEncryptionKey(byte[] requester, byte[] requestContent, RouterSocket router, Guid requesterIdentity)
+        private void HandleSendEncryptionKey(byte[] requester, byte[] requestContent, RouterSocket router,
+            Guid requesterIdentity)
         {
             if (_encryptionKeys.ContainsKey(requesterIdentity))
                 ErrorMessageSender.SendError(requester, router, ErrorCode.EncryptionKeyAlreadySent);
@@ -110,7 +113,7 @@ namespace QResurgence.SST.Security
         private static void SendAcknowledge(byte[] requester, RouterSocket router)
         {
             var response = ResponseCreator.Create(new NoEncryption(), requester, MessageType.Acknowledge);
-            
+
             router.SendMultipartMessage(response);
         }
 
@@ -152,7 +155,8 @@ namespace QResurgence.SST.Security
 
         private void SendPublicKey(byte[] requester, RouterSocket router)
         {
-            var response = ResponseCreator.Create(new NoEncryption(), requester, MessageType.SendPublicKey, JsonConvert.SerializeObject(_decryptor.PublicKey));
+            var response = ResponseCreator.Create(new NoEncryption(), requester, MessageType.SendPublicKey,
+                JsonConvert.SerializeObject(_decryptor.PublicKey));
 
             router.SendMultipartMessage(response);
         }

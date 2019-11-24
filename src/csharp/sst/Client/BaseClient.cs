@@ -1,5 +1,4 @@
 using System;
-using System.Text;
 using NetMQ;
 using NetMQ.Sockets;
 using Newtonsoft.Json;
@@ -17,9 +16,9 @@ namespace QResurgence.SST.Client
     /// </summary>
     public abstract class BaseClient : IClient
     {
+        private readonly SymetricEncryption _encryptor;
         private readonly SecurityNegotiationClient _negotiator;
         private readonly RequestSocket _requestSocket;
-        private readonly SymetricEncryption _encryptor;
 
         /// <summary>
         ///     Initializes an instance of the <see cref="BaseClient" /> class
@@ -42,7 +41,8 @@ namespace QResurgence.SST.Client
             return !_negotiator.Negotiate(_requestSocket)
                 ? new Left<IError, CapabilityClient<TArgument, TReturn>>(new UnsuccessfulNegotiationWithServer())
                 : GetCapabilityFromServer(name)
-                    .Map(info => new CapabilityClient<TArgument, TReturn>(_requestSocket, info, _negotiator, _encryptor));
+                    .Map(info =>
+                        new CapabilityClient<TArgument, TReturn>(_requestSocket, info, _encryptor));
         }
 
         /// <inheritdoc />
@@ -53,7 +53,8 @@ namespace QResurgence.SST.Client
 
         private Either<IError, CapabilityInfo> GetCapabilityFromServer(string name)
         {
-            var message = RequestCreator.Create(_encryptor, MessageType.GetCapability, JsonConvert.SerializeObject(new CapabilityInfo(name)));
+            var message = RequestCreator.Create(_encryptor, MessageType.GetCapability,
+                JsonConvert.SerializeObject(new CapabilityInfo(name)));
             _requestSocket.SendMultipartMessage(message);
 
             var response = _requestSocket.ReceiveMultipartMessage();

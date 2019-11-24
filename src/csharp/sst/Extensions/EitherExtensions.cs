@@ -44,8 +44,10 @@ namespace QResurgence.SST.Extensions
         /// <returns>The resulting container type of the <typeparamref name="TLeft" /> or <typeparamref name="TNewRight" /> value</returns>
         public static Either<TLeft, TNewRight> Map<TLeft, TRight, TNewRight>(
             this Either<TLeft, TRight> either,
-            Func<TRight, Either<TLeft, TNewRight>> map) =>
-            !either.IsRight() ? new Left<TLeft, TNewRight>(either) : map(either);
+            Func<TRight, Either<TLeft, TNewRight>> map)
+        {
+            return !either.IsRight() ? new Left<TLeft, TNewRight>(either) : map(either);
+        }
 
         /// <summary>
         ///     Implements conditional mapping of the <typeparamref name="TRight" /> value into the

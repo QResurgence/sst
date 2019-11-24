@@ -15,7 +15,7 @@ namespace QResurgence.SST.Security
 
         public byte[] Encrypt(string payloadJson)
         {
-            return _rsaProvider.Encrypt(Encoding.UTF8.GetBytes(payloadJson), fOAEP: false);
+            return _rsaProvider.Encrypt(Encoding.UTF8.GetBytes(payloadJson), false);
         }
     }
 }

@@ -1,4 +1,3 @@
-using System.Text;
 using Newtonsoft.Json;
 
 namespace QResurgence.SST.Capability
@@ -11,8 +10,10 @@ namespace QResurgence.SST.Capability
     public abstract class BaseCapability<TArguments, TReturn> : ICapability
     {
         /// <inheritdoc />
-        public string Invoke(string argumentJson) =>
-            Serialize(Invoke(Deserialize(argumentJson)));
+        public string Invoke(string argumentJson)
+        {
+            return Serialize(Invoke(Deserialize(argumentJson)));
+        }
 
         /// <summary>
         ///     Invokes the capability with correct types
@@ -21,8 +22,14 @@ namespace QResurgence.SST.Capability
         /// <returns>The return value</returns>
         protected abstract TReturn Invoke(TArguments argument);
 
-        private static TArguments Deserialize(string json) => JsonConvert.DeserializeObject<TArguments>(json);
+        private static TArguments Deserialize(string json)
+        {
+            return JsonConvert.DeserializeObject<TArguments>(json);
+        }
 
-        private static string Serialize(TReturn r) => JsonConvert.SerializeObject(r);
+        private static string Serialize(TReturn r)
+        {
+            return JsonConvert.SerializeObject(r);
+        }
     }
 }

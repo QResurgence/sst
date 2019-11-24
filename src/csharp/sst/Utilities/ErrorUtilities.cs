@@ -8,15 +8,12 @@ namespace QResurgence.SST.Utilities
     {
         public static IError GetErrorByErrorCode(ErrorCode errorCode)
         {
-            switch (errorCode)
+            return errorCode switch
             {
-                case ErrorCode.RequestDenied:
-                    return new RequestDeniedError();
-                case ErrorCode.InvocationError:
-                    return new CapabilityInvocationError();
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(errorCode), errorCode, null);
-            }
+                ErrorCode.RequestDenied => (IError) new RequestDeniedError(),
+                ErrorCode.InvocationError => new CapabilityInvocationError(),
+                _ => throw new ArgumentOutOfRangeException(nameof(errorCode), errorCode, null)
+            };
         }
     }
 }

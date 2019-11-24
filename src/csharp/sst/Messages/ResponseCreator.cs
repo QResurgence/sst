@@ -9,23 +9,19 @@ namespace QResurgence.SST.Messages
         {
             return Create(encryptor, to, type, string.Empty);
         }
-        
+
         public static NetMQMessage Create(IEncryptor encryptor, byte[] to, MessageType type, string payloadJson)
         {
             var response = new NetMQMessage();
             response.Append(to);
             response.AppendEmptyFrame();
-            response.Append((int)type);
+            response.Append((int) type);
 
             if (string.IsNullOrEmpty(payloadJson))
-            {
                 response.AppendEmptyFrame();
-            }
             else
-            {
                 response.Append(encryptor.Encrypt(payloadJson));
-            }
-            
+
             return response;
         }
     }

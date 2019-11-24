@@ -34,17 +34,29 @@ namespace QResurgence.SST.Utilities
         /// </summary>
         /// <param name="either">The container</param>
         /// <returns>The value</returns>
-        public static implicit operator TLeft(Either<TLeft, TRight> either) => either._left;
+        public static implicit operator TLeft(Either<TLeft, TRight> either)
+        {
+            return either._left;
+        }
 
         /// <summary>
         ///     Implements the implicit cast of the container type into its <typeparamref name="TRight" /> value
         /// </summary>
         /// <param name="either">The container</param>
         /// <returns>The value</returns>
-        public static implicit operator TRight(Either<TLeft, TRight> either) => either._right;
+        public static implicit operator TRight(Either<TLeft, TRight> either)
+        {
+            return either._right;
+        }
 
-        internal bool IsLeft() => _left != null;
+        internal bool IsLeft()
+        {
+            return _left != null;
+        }
 
-        internal bool IsRight() => _right != null;
+        internal bool IsRight()
+        {
+            return _right != null;
+        }
     }
 }

@@ -20,7 +20,7 @@ namespace QResurgence.SST.Security
 
         public string Decrypt(byte[] payload)
         {
-            return Encoding.UTF8.GetString(_rsaProvider.Decrypt(payload, fOAEP: false));
+            return Encoding.UTF8.GetString(_rsaProvider.Decrypt(payload, false));
         }
     }
 }

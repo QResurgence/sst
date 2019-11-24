@@ -11,7 +11,7 @@ namespace QResurgence.SST.Messages
         {
             return Read<object>(decryptor, message);
         }
-        
+
         public static Request<T> Read<T>(IDecryptor decryptor, NetMQMessage message)
         {
             // Frame 0: RequesterID
@@ -26,9 +26,7 @@ namespace QResurgence.SST.Messages
 
             var payload = default(T);
             if (!message.First.IsEmpty)
-            {
                 payload = JsonConvert.DeserializeObject<T>(decryptor.Decrypt(message.Pop().ToByteArray()));
-            }
 
             return new Request<T>(requester, type, payload);
         }

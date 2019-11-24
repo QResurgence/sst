@@ -264,19 +264,20 @@ namespace QResurgence.SST.UnitTests
             Assert.True(foldFinalHandlerExecuted);
         }
 
-        internal class LeftFirstType
+        private class LeftFirstType
         {
         }
 
-        internal class LeftSecondType
+        // ReSharper disable once ClassNeverInstantiated.Local
+        private class LeftSecondType
         {
         }
 
-        internal class RightFirstType
+        private class RightFirstType
         {
         }
 
-        internal class RightSecondType
+        private class RightSecondType
         {
         }
     }
