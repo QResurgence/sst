@@ -4,6 +4,7 @@ using NetMQ;
 using Newtonsoft.Json;
 using NUnit.Framework;
 using QResurgence.SST.Messages;
+using QResurgence.SST.Security;
 using ErrorCode = QResurgence.SST.Messages.ErrorCode;
 
 namespace QResurgence.SST.Tests
@@ -13,8 +14,8 @@ namespace QResurgence.SST.Tests
         [Test]
         public void RequestCreateWithPayloadTest()
         {
-            var payload = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(ErrorCode.InvocationError));
-            var request = RequestCreator.Create(MessageType.Error, payload);
+            var payload = JsonConvert.SerializeObject(ErrorCode.InvocationError);
+            var request = RequestCreator.Create(new NoEncryption(), MessageType.Error, payload);
             
             Assert.AreEqual(2, request.FrameCount);
 
@@ -28,7 +29,7 @@ namespace QResurgence.SST.Tests
         [Test]
         public void RequestCreateWithoutPayloadTest()
         {
-            var request = RequestCreator.Create(MessageType.Acknowledge);
+            var request = RequestCreator.Create(new NoEncryption(), MessageType.Acknowledge);
             
             Assert.AreEqual(2, request.FrameCount);
 
@@ -51,7 +52,7 @@ namespace QResurgence.SST.Tests
             requestMessage.Append((int)MessageType.Error);
             requestMessage.Append(JsonConvert.SerializeObject(ErrorCode.InvocationError));
 
-            var request = RequestReader.Read<ErrorCode>(requestMessage);
+            var request = RequestReader.Read<ErrorCode>(new NoEncryption(), requestMessage);
             
             Assert.AreEqual(requester, new Guid(request.From));
             Assert.AreEqual(MessageType.Error, request.Type);
@@ -73,7 +74,7 @@ namespace QResurgence.SST.Tests
             requestMessage.Append((int)MessageType.Acknowledge);
             requestMessage.AppendEmptyFrame();
 
-            var request = RequestReader.Read(requestMessage);
+            var request = RequestReader.Read(new NoEncryption(), requestMessage);
             
             Assert.AreEqual(requester, new Guid(request.From));
             Assert.AreEqual(MessageType.Acknowledge, request.Type);

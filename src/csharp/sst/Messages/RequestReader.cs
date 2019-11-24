@@ -1,17 +1,18 @@
 using System.Diagnostics;
 using NetMQ;
 using Newtonsoft.Json;
+using QResurgence.SST.Security;
 
 namespace QResurgence.SST.Messages
 {
     internal static class RequestReader
     {
-        public static Request<object> Read(NetMQMessage message)
+        public static Request<object> Read(IDecryptor decryptor, NetMQMessage message)
         {
-            return Read<object>(message);
+            return Read<object>(decryptor, message);
         }
         
-        public static Request<T> Read<T>(NetMQMessage message)
+        public static Request<T> Read<T>(IDecryptor decryptor, NetMQMessage message)
         {
             // Frame 0: RequesterID
             // Frame 1: Empty
@@ -26,7 +27,7 @@ namespace QResurgence.SST.Messages
             var payload = default(T);
             if (!message.First.IsEmpty)
             {
-                payload = JsonConvert.DeserializeObject<T>(message.Pop().ConvertToString());
+                payload = JsonConvert.DeserializeObject<T>(decryptor.Decrypt(message.Pop().ToByteArray()));
             }
 
             return new Request<T>(requester, type, payload);

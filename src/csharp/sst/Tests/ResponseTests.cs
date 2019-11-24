@@ -4,6 +4,7 @@ using NetMQ;
 using Newtonsoft.Json;
 using NUnit.Framework;
 using QResurgence.SST.Messages;
+using QResurgence.SST.Security;
 using ErrorCode = QResurgence.SST.Messages.ErrorCode;
 
 namespace QResurgence.SST.Tests
@@ -14,9 +15,9 @@ namespace QResurgence.SST.Tests
         public void ResponseCreateWithPayloadTest()
         {
             var requester = Guid.NewGuid();
-            var payload = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(ErrorCode.InvocationError));
+            var payload = JsonConvert.SerializeObject(ErrorCode.InvocationError);
 
-            var response = ResponseCreator.Create(requester.ToByteArray(), MessageType.Error, payload);
+            var response = ResponseCreator.Create(new NoEncryption(), requester.ToByteArray(), MessageType.Error, payload);
             
             Assert.AreEqual(4, response.FrameCount);
 
@@ -37,7 +38,7 @@ namespace QResurgence.SST.Tests
         {
             var requester = Guid.NewGuid();
 
-            var response = ResponseCreator.Create(requester.ToByteArray(), MessageType.Acknowledge);
+            var response = ResponseCreator.Create(new NoEncryption(), requester.ToByteArray(), MessageType.Acknowledge);
             
             Assert.AreEqual(4, response.FrameCount);
 
@@ -59,7 +60,7 @@ namespace QResurgence.SST.Tests
             responseMessage.Append((int)MessageType.Error);
             responseMessage.Append(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(ErrorCode.InvocationError)));
 
-            var response = ResponseReader.Read<ErrorCode>(responseMessage);
+            var response = ResponseReader.Read<ErrorCode>(new NoEncryption(), responseMessage);
             
             Assert.AreEqual(MessageType.Error, response.Type);
             Assert.AreEqual(ErrorCode.InvocationError, response.Payload);
@@ -72,7 +73,7 @@ namespace QResurgence.SST.Tests
             responseMessage.Append((int)MessageType.Acknowledge);
             responseMessage.AppendEmptyFrame();
 
-            var response = ResponseReader.Read(responseMessage);
+            var response = ResponseReader.Read(new NoEncryption(), responseMessage);
             
             Assert.AreEqual(MessageType.Acknowledge, response.Type);
             Assert.IsNull(response.Payload);

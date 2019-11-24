@@ -1,26 +1,27 @@
 using NetMQ;
+using QResurgence.SST.Security;
 
 namespace QResurgence.SST.Messages
 {
     internal static class RequestCreator
     {
-        public static NetMQMessage Create(MessageType type)
+        public static NetMQMessage Create(IEncryptor encryptor, MessageType type)
         {
-            return Create(type, new byte[] { });
+            return Create(encryptor, type, string.Empty);
         }
         
-        public static NetMQMessage Create(MessageType type, byte[] payload)
+        public static NetMQMessage Create(IEncryptor encryptor, MessageType type, string payloadJson)
         {
             var request = new NetMQMessage();
             request.Append((int)type);
 
-            if (payload.Length == 0)
+            if (string.IsNullOrEmpty(payloadJson))
             {
                 request.AppendEmptyFrame();
             }
             else
             {
-                request.Append(payload);
+                request.Append(encryptor.Encrypt(payloadJson));
             }
 
             return request;
