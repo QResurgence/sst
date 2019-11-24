@@ -3,11 +3,11 @@ using System.Text;
 
 namespace QResurgence.SST.Security
 {
-    internal class AsymetricEncryptionServer : IEncryptor, IDecryptor
+    internal class AsymetricDecryptor : IDecryptor
     {
         private readonly RSACryptoServiceProvider _rsaProvider;
 
-        public AsymetricEncryptionServer()
+        public AsymetricDecryptor()
         {
             _rsaProvider = new RSACryptoServiceProvider();
             PublicKey = _rsaProvider.ToXmlString(false);
@@ -17,11 +17,6 @@ namespace QResurgence.SST.Security
         }
 
         public string PublicKey { get; }
-        
-        public byte[] Encrypt(string payloadJson)
-        {
-            return _rsaProvider.Encrypt(Encoding.UTF8.GetBytes(payloadJson), fOAEP: false);
-        }
 
         public string Decrypt(byte[] payload)
         {

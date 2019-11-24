@@ -53,7 +53,7 @@ namespace QResurgence.SST.Client
 
         private Either<IError, CapabilityInfo> GetCapabilityFromServer(string name)
         {
-            var message = CreateGetCapabilityMessage(name);
+            var message = RequestCreator.Create(_encryptor, MessageType.GetCapability, JsonConvert.SerializeObject(new CapabilityInfo(name)));
             _requestSocket.SendMultipartMessage(message);
 
             var response = _requestSocket.ReceiveMultipartMessage();
@@ -71,14 +71,6 @@ namespace QResurgence.SST.Client
                 default:
                     return new Left<IError, CapabilityInfo>(new UnexpectedMessageError());
             }
-        }
-
-        private NetMQMessage CreateGetCapabilityMessage(string name)
-        {
-            var request = new NetMQMessage();
-            request.Append((int) MessageType.GetCapability);
-            request.Append(_encryptor.Encrypt(JsonConvert.SerializeObject(new CapabilityInfo(name))));
-            return request;
         }
     }
 }

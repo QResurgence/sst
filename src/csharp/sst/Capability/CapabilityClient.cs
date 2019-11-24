@@ -7,6 +7,7 @@ using QResurgence.SST.Errors;
 using QResurgence.SST.Messages;
 using QResurgence.SST.Security;
 using QResurgence.SST.Utilities;
+using ErrorCode = NetMQ.ErrorCode;
 
 namespace QResurgence.SST.Capability
 {
@@ -53,10 +54,10 @@ namespace QResurgence.SST.Capability
             {
                 case MessageType.CapabilityInvocationResult:
                     return new Right<IError, TReturn>(
-                        JsonConvert.DeserializeObject<TReturn>(response.Pop().ConvertToString()));
+                        JsonConvert.DeserializeObject<TReturn>(_encryptor.Decrypt(response.Pop().ToByteArray())));
                 case MessageType.Error:
-                    var error = JsonConvert.DeserializeObject<ErrorMessage>(response.Pop().ConvertToString());
-                    return new Left<IError, TReturn>(ErrorUtilities.GetErrorByErrorCode(error.ErrorCode));
+                    var error = JsonConvert.DeserializeObject<Messages.ErrorCode>(response.Pop().ConvertToString());
+                    return new Left<IError, TReturn>(ErrorUtilities.GetErrorByErrorCode(error));
                 default:
                     throw new ArgumentOutOfRangeException();
             }

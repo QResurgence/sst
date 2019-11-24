@@ -9,8 +9,8 @@ namespace QResurgence.SST.Client
     {
         public static IError GetError(byte[] errorContent)
         {
-            var error = JsonConvert.DeserializeObject<ErrorMessage>(Encoding.UTF8.GetString(errorContent));
-            switch (error.ErrorCode)
+            var error = JsonConvert.DeserializeObject<ErrorCode>(Encoding.UTF8.GetString(errorContent));
+            switch (error)
             {
                 case ErrorCode.RequestDenied:
                     return new RequestDeniedError();

@@ -91,17 +91,17 @@ namespace QResurgence.SST.Server
                     break;
                 case MessageType.GetCapability:
                 {
-                    var decryptedInfoJson = _negotiator.Decrypt(requesterIdentity, request.Pop().ToByteArray());
+                    var decryptedInfoJson = _negotiator.GetDecryptorFor(requesterIdentity).Decrypt(request.Pop().ToByteArray());
                     var info = DeserializeCapabilityInfo(decryptedInfoJson);
                     HandleGetCapability(requester, requesterIdentity, info);
                 }
                     break;
                 case MessageType.InvokeCapability:
                 {
-                    var decryptedInfoJson = _negotiator.Decrypt(requesterIdentity, request.Pop().ToByteArray());
+                    var decryptedInfoJson = _negotiator.GetDecryptorFor(requesterIdentity).Decrypt(request.Pop().ToByteArray());
                     var info = DeserializeCapabilityInfo(decryptedInfoJson);
-                    var requestContent = _negotiator.Decrypt(requesterIdentity, request.Pop().ToByteArray());
-                    HandleInvokeCapability(requester, info, requestContent);
+                    var requestContent = _negotiator.GetDecryptorFor(requesterIdentity).Decrypt(request.Pop().ToByteArray());
+                    HandleInvokeCapability(requester, requesterIdentity, info, requestContent);
                 }
                     break;
                 default:
@@ -114,22 +114,19 @@ namespace QResurgence.SST.Server
             request.Pop();
         }
 
-        private void HandleInvokeCapability(byte[] requester, CapabilityInfo info, string requestContentJson)
+        private void HandleInvokeCapability(byte[] requester, Guid requesterIdentity, CapabilityInfo info, string requestContentJson)
         {
             _registry.Get(info.Name)
-                .Just(capability => { InvokeCapability(requester, capability, requestContentJson); })
+                .Just(capability => { InvokeCapability(requester, requesterIdentity, capability, requestContentJson); })
                 .Nothing(() => { ErrorMessageSender.SendError(requester, _router, ErrorCode.RequestDenied); });
         }
 
-        private void InvokeCapability(byte[] destination, ICapability capability, string arguments)
+        private void InvokeCapability(byte[] destination, Guid requesterIdentity, ICapability capability, string arguments)
         {
             try
             {
-                var response = new NetMQMessage();
-                response.Append(destination);
-                response.AppendEmptyFrame();
-                response.Append((int) MessageType.CapabilityInvocationResult);
-                response.Append(capability.Invoke(arguments));
+                var encryptor = _negotiator.GetEncryptorFor(requesterIdentity);
+                var response = ResponseCreator.Create(encryptor, destination, MessageType.CapabilityInvocationResult, capability.Invoke(arguments));
 
                 _router.SendMultipartMessage(response);
             }
@@ -148,12 +145,10 @@ namespace QResurgence.SST.Server
 
         private void GrantCapability(Guid requesterIdentity, byte[] destination, CapabilityInfo info)
         {
-            var encryptedInfoJson = _negotiator.Encrypt(requesterIdentity, JsonConvert.SerializeObject(info));
-            var response = new NetMQMessage();
-            response.Append(destination);
-            response.AppendEmptyFrame();
-            response.Append((int) MessageType.GrantCapability);
-            response.Append(encryptedInfoJson);
+            var infoJson = JsonConvert.SerializeObject(info);
+            var encryptor = _negotiator.GetEncryptorFor(requesterIdentity);
+
+            var response = ResponseCreator.Create(encryptor, destination, MessageType.GrantCapability, infoJson);
 
             _router.SendMultipartMessage(response);
         }

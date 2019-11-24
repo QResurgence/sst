@@ -15,11 +15,11 @@ namespace QResurgence.SST.Security
     {
         private readonly Dictionary<Guid, SymetricEncryption> _encryptionKeys;
         private readonly Dictionary<Guid, Solution> _solutions;
-        private readonly AsymetricEncryptionServer _encryptionServer;
+        private readonly AsymetricDecryptor _decryptor;
 
         public SecurityNegotiationServer()
         {
-            _encryptionServer = new AsymetricEncryptionServer();
+            _decryptor = new AsymetricDecryptor();
 
             _encryptionKeys = new Dictionary<Guid, SymetricEncryption>();
             _solutions = new Dictionary<Guid, Solution>();
@@ -38,11 +38,11 @@ namespace QResurgence.SST.Security
             }
         }
 
-        public byte[] Encrypt(Guid requesterIdentity, string jsonData) =>
-            _encryptionKeys[requesterIdentity].Encrypt(jsonData);
+        public IEncryptor GetEncryptorFor(Guid requesterIdentity) =>
+            _encryptionKeys[requesterIdentity];
 
-        public string Decrypt(Guid requesterIdentity, byte[] data) =>
-            _encryptionKeys[requesterIdentity].Decrypt(data);
+        public IDecryptor GetDecryptorFor(Guid requesterIdentity) =>
+            _encryptionKeys[requesterIdentity];
 
         private void HandleMessage(byte[] requester, MessageType requestType, byte[] requestContent,
             RouterSocket router, Guid requesterIdentity)
@@ -72,7 +72,7 @@ namespace QResurgence.SST.Security
                     ErrorMessageSender.SendError(requester, router, ErrorCode.ChallengeFailed);
             }
 
-            var solutionDecryptedJson = Decrypt(requesterIdentity, requestContent);
+            var solutionDecryptedJson = GetDecryptorFor(requesterIdentity).Decrypt(requestContent);
 
             if (ChallengeResponseIsCorrect(requesterIdentity,
                 JsonConvert.DeserializeObject<Solution>(solutionDecryptedJson)))
@@ -86,13 +86,12 @@ namespace QResurgence.SST.Security
             ErrorMessageSender.SendError(requester, router, ErrorCode.ChallengeFailed);
         }
 
-        private void HandleSendEncryptionKey(byte[] requester, byte[] requestContent, RouterSocket router,
-            Guid requesterIdentity)
+        private void HandleSendEncryptionKey(byte[] requester, byte[] requestContent, RouterSocket router, Guid requesterIdentity)
         {
             if (_encryptionKeys.ContainsKey(requesterIdentity))
                 ErrorMessageSender.SendError(requester, router, ErrorCode.EncryptionKeyAlreadySent);
 
-            var encryptionKey = _encryptionServer.Decrypt(requestContent);
+            var encryptionKey = _decryptor.Decrypt(requestContent);
             StoreEncryptionKey(requesterIdentity, JsonConvert.DeserializeObject<EncryptionKey>(encryptionKey));
             var challenge = ChallengeGenerator.Generate(requesterIdentity);
             var solution = ChallengeSolver.Solve(challenge);
@@ -110,25 +109,17 @@ namespace QResurgence.SST.Security
 
         private static void SendAcknowledge(byte[] requester, RouterSocket router)
         {
-            var response = new NetMQMessage();
-            response.Append(requester);
-            response.AppendEmptyFrame();
-            response.Append((int) MessageType.Acknowledge);
-            response.AppendEmptyFrame();
-
+            var response = ResponseCreator.Create(new NoEncryption(), requester, MessageType.Acknowledge);
+            
             router.SendMultipartMessage(response);
         }
 
         private void SendChallenge(byte[] requester, Guid requesterIdentity, RouterSocket router, Challenge challenge)
         {
             var challengeJson = JsonConvert.SerializeObject(challenge);
-            var encryptedChallenge = Encrypt(requesterIdentity, challengeJson);
+            var encryptor = GetEncryptorFor(requesterIdentity);
 
-            var response = new NetMQMessage();
-            response.Append(requester);
-            response.AppendEmptyFrame();
-            response.Append((int) MessageType.SendChallenge);
-            response.Append(encryptedChallenge);
+            var response = ResponseCreator.Create(encryptor, requester, MessageType.SendChallenge, challengeJson);
 
             router.SendMultipartMessage(response);
         }
@@ -161,11 +152,7 @@ namespace QResurgence.SST.Security
 
         private void SendPublicKey(byte[] requester, RouterSocket router)
         {
-            var response = new NetMQMessage();
-            response.Append(requester);
-            response.AppendEmptyFrame();
-            response.Append((int) MessageType.SendPublicKey);
-            response.Append(_encryptionServer.PublicKey);
+            var response = ResponseCreator.Create(new NoEncryption(), requester, MessageType.SendPublicKey, JsonConvert.SerializeObject(_decryptor.PublicKey));
 
             router.SendMultipartMessage(response);
         }

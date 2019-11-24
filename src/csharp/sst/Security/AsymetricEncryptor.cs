@@ -3,19 +3,14 @@ using System.Text;
 
 namespace QResurgence.SST.Security
 {
-    internal class AsymetricEncryptionClient : IEncryptor, IDecryptor
+    internal class AsymetricEncryptor : IEncryptor
     {
         private readonly RSACryptoServiceProvider _rsaProvider;
 
-        public AsymetricEncryptionClient(string publicKey)
+        public AsymetricEncryptor(string publicKey)
         {
             _rsaProvider = new RSACryptoServiceProvider();
             _rsaProvider.FromXmlString(publicKey);
-        }
-        
-        public string Decrypt(byte[] payload)
-        {
-            return Encoding.UTF8.GetString(_rsaProvider.Decrypt(payload, fOAEP: false));
         }
 
         public byte[] Encrypt(string payloadJson)

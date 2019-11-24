@@ -5,8 +5,10 @@ using System.Text;
 using NetMQ;
 using NetMQ.Sockets;
 using Newtonsoft.Json;
+using QResurgence.SST.Extensions;
 using QResurgence.SST.Messages;
 using QResurgence.SST.Utilities;
+using ErrorCode = NetMQ.ErrorCode;
 
 namespace QResurgence.SST.Security
 {
@@ -68,6 +70,7 @@ namespace QResurgence.SST.Security
         private Maybe<Challenge> GetChallenge(RequestSocket requestSocket)
         {
             var challengeMessage = requestSocket.ReceiveMultipartMessage();
+
             var messageType = (MessageType) challengeMessage.Pop().ConvertToInt32();
 
             switch (messageType)
@@ -83,36 +86,27 @@ namespace QResurgence.SST.Security
 
         private void SendEncryptionKey(RequestSocket requestSocket, string publicKey)
         {
-            var encryptionClient = new AsymetricEncryptionClient(publicKey);
-
+            var encryptionClient = new AsymetricEncryptor(publicKey);
             var encryptionKeyJson = JsonConvert.SerializeObject(_encryptor.EncryptionKey);
-            var encryptedEncryptionKeyJson = encryptionClient.Encrypt(encryptionKeyJson);
+            var request = RequestCreator.Create(encryptionClient, MessageType.SendEncryptionKey, encryptionKeyJson);
 
-            var message = new NetMQMessage();
-            message.Append((int) MessageType.SendEncryptionKey);
-            message.Append(encryptedEncryptionKeyJson);
-
-            requestSocket.SendMultipartMessage(message);
+            requestSocket.SendMultipartMessage(request);
         }
 
         private static Maybe<string> RequestPublicKey(RequestSocket requestSocket)
         {
-            var request = new NetMQMessage();
-            request.Append((int) MessageType.RequestPublicKey);
-            request.AppendEmptyFrame(); // Needed as padding
+            var request = RequestCreator.Create(new NoEncryption(), MessageType.RequestPublicKey);
 
             requestSocket.SendMultipartMessage(request);
 
-            var response = requestSocket.ReceiveMultipartMessage();
+            var responseMessage = requestSocket.ReceiveMultipartMessage();
 
-            var messageType = (MessageType) response.Pop().ConvertToInt32();
-            switch (messageType)
-            {
-                case MessageType.SendPublicKey:
-                    return new Maybe<string>(response.Pop().ConvertToString());
-                default:
-                    return new Nothing<string>();
-            }
+            Maybe<string> response = null;
+            ResponseReader.Read<string>(new NoEncryption(), new NoEncryption(), responseMessage)
+                .Case((Response<string> publicKay) => response = new Maybe<string>(publicKay.Payload))
+                .Fold(_ => response = new Nothing<string>());
+
+            return response;
         }
     }
 }

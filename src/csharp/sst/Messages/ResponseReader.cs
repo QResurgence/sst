@@ -2,6 +2,7 @@ using System.Diagnostics;
 using NetMQ;
 using Newtonsoft.Json;
 using QResurgence.SST.Security;
+using QResurgence.SST.Utilities;
 
 namespace QResurgence.SST.Messages
 {
@@ -27,6 +28,20 @@ namespace QResurgence.SST.Messages
             }
             
             return new Response<T>(type, payload);
+        }
+
+        public static Either<Response<ErrorCode>, Response<T>> Read<T>(IDecryptor decryptorLeft, IDecryptor decryptorRight, NetMQMessage message)
+        {
+            // Frame 0: Message type
+            // Frame 1: Payload
+            Debug.Assert(message.FrameCount == 2);
+            
+            var type = (MessageType) message.First.ConvertToInt32();
+
+            return type == MessageType.Error
+                ? (Either<Response<ErrorCode>, Response<T>>) new Left<Response<ErrorCode>, Response<T>>(
+                    Read<ErrorCode>(decryptorLeft, message))
+                : new Right<Response<ErrorCode>, Response<T>>(Read<T>(decryptorRight, message));
         }
     }
 }
