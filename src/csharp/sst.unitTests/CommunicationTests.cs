@@ -6,7 +6,7 @@ using QResurgence.SST.UnitTests.TestImplementation;
 
 namespace QResurgence.SST.UnitTests
 {
-    public class TestCommunication
+    public class CommunicationTests
     {
         [Test]
         public void ImplementationCorrectTest()
