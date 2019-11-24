@@ -12,16 +12,11 @@ namespace QResurgence.SST.Security
 {
     internal class SecurityNegotiationClient
     {
-        private readonly EncryptionKey _encryptionKey;
-        private readonly ChaCha20 _encryptor;
+        private readonly SymetricEncryption _encryptor;
 
-        public SecurityNegotiationClient()
+        public SecurityNegotiationClient(SymetricEncryption encryptor)
         {
-            var key = GenerateEncryptionKey();
-            var nonce = GenerateNonce();
-
-            _encryptionKey = new EncryptionKey(key, nonce);
-            _encryptor = new ChaCha20(key, nonce, 1);
+            _encryptor = encryptor;
         }
 
         private byte[] GenerateNonce() => Guid.NewGuid().ToByteArray().Take(12).ToArray();
@@ -61,7 +56,7 @@ namespace QResurgence.SST.Security
 
         private void SendChallengeResponse(RequestSocket requestSocket, Solution solution)
         {
-            var encryptedSolution = Encrypt(JsonConvert.SerializeObject(solution));
+            var encryptedSolution = _encryptor.Encrypt(JsonConvert.SerializeObject(solution));
 
             var solutionMessage = new NetMQMessage();
             solutionMessage.Append((int) MessageType.ChallengeResponse);
@@ -69,14 +64,6 @@ namespace QResurgence.SST.Security
 
             requestSocket.SendMultipartMessage(solutionMessage);
         }
-
-        private byte[] Encrypt(string jsonData) => _encryptor.EncryptString(jsonData);
-
-        public byte[] Encrypt(byte[] data) => _encryptor.EncryptBytes(data);
-
-        public byte[] Decrypt(byte[] data) => _encryptor.DecryptBytes(data);
-
-        private string DecryptString(byte[] data) => _encryptor.DecryptUTF8ByteArray(data);
 
         private Maybe<Challenge> GetChallenge(RequestSocket requestSocket)
         {
@@ -88,7 +75,7 @@ namespace QResurgence.SST.Security
                 case MessageType.SendChallenge:
                     var encryptedChallenge = challengeMessage.Pop().ToByteArray();
                     return new Maybe<Challenge>(
-                        JsonConvert.DeserializeObject<Challenge>(DecryptString(encryptedChallenge)));
+                        JsonConvert.DeserializeObject<Challenge>(_encryptor.Decrypt(encryptedChallenge)));
                 default:
                     return new Nothing<Challenge>();
             }
@@ -96,11 +83,10 @@ namespace QResurgence.SST.Security
 
         private void SendEncryptionKey(RequestSocket requestSocket, string publicKey)
         {
-            var rsaProvider = new RSACryptoServiceProvider();
-            rsaProvider.FromXmlString(publicKey);
+            var encryptionClient = new AsymetricEncryptionClient(publicKey);
 
-            var encryptionKeyJson = JsonConvert.SerializeObject(_encryptionKey);
-            var encryptedEncryptionKeyJson = rsaProvider.Encrypt(Encoding.UTF8.GetBytes(encryptionKeyJson), false);
+            var encryptionKeyJson = JsonConvert.SerializeObject(_encryptor.EncryptionKey);
+            var encryptedEncryptionKeyJson = encryptionClient.Encrypt(encryptionKeyJson);
 
             var message = new NetMQMessage();
             message.Append((int) MessageType.SendEncryptionKey);

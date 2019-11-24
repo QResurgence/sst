@@ -20,6 +20,7 @@ namespace QResurgence.SST.Capability
         private readonly CapabilityInfo _info;
         private readonly SecurityNegotiationClient _negotiator;
         private readonly RequestSocket _socket;
+        private readonly SymetricEncryption _encryptor;
 
         /// <summary>
         ///     Initializes an instance of the <see cref="CapabilityClient{TArgument,TReturn}" /> class
@@ -27,11 +28,13 @@ namespace QResurgence.SST.Capability
         /// <param name="socket">The socket used for communication</param>
         /// <param name="info">The capability info</param>
         /// <param name="negotiator">The security negotiator</param>
-        internal CapabilityClient(RequestSocket socket, CapabilityInfo info, SecurityNegotiationClient negotiator)
+        /// <param name="encryptor">The encryption client</param>
+        internal CapabilityClient(RequestSocket socket, CapabilityInfo info, SecurityNegotiationClient negotiator, SymetricEncryption encryptor)
         {
             _socket = socket;
             _info = info;
             _negotiator = negotiator;
+            _encryptor = encryptor;
         }
 
         /// <summary>
@@ -63,8 +66,8 @@ namespace QResurgence.SST.Capability
         {
             var request = new NetMQMessage();
             request.Append((int) MessageType.InvokeCapability);
-            request.Append(_negotiator.Encrypt(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(_info))));
-            request.Append(_negotiator.Encrypt(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(argument))));
+            request.Append(_encryptor.Encrypt(JsonConvert.SerializeObject(_info)));
+            request.Append(_encryptor.Encrypt(JsonConvert.SerializeObject(argument)));
 
             return request;
         }

@@ -14,17 +14,12 @@ namespace QResurgence.SST.Security
     internal class SecurityNegotiationServer
     {
         private readonly Dictionary<Guid, ChaCha20> _encryptionKeys;
-        private readonly string _publicKey;
-        private readonly RSACryptoServiceProvider _rsaProvider;
         private readonly Dictionary<Guid, Solution> _solutions;
+        private readonly AsymetricEncryptionServer _encryptionServer;
 
         public SecurityNegotiationServer()
         {
-            _rsaProvider = new RSACryptoServiceProvider();
-            _publicKey = _rsaProvider.ToXmlString(false);
-            var privateKey = _rsaProvider.ToXmlString(true);
-
-            _rsaProvider.FromXmlString(privateKey);
+            _encryptionServer = new AsymetricEncryptionServer();
 
             _encryptionKeys = new Dictionary<Guid, ChaCha20>();
             _solutions = new Dictionary<Guid, Solution>();
@@ -97,8 +92,8 @@ namespace QResurgence.SST.Security
             if (_encryptionKeys.ContainsKey(requesterIdentity))
                 ErrorMessageSender.SendError(requester, router, ErrorCode.EncryptionKeyAlreadySent);
 
-            var encryptionKey = DecryptWithPrivateKey(requestContent);
-            StoreEncryptionKey(requesterIdentity, encryptionKey);
+            var encryptionKey = _encryptionServer.Decrypt(requestContent);
+            StoreEncryptionKey(requesterIdentity, JsonConvert.DeserializeObject<EncryptionKey>(encryptionKey));
             var challenge = ChallengeGenerator.Generate(requesterIdentity);
             var solution = ChallengeSolver.Solve(challenge);
             SaveSolutionForRequester(requesterIdentity, solution);
@@ -164,17 +159,13 @@ namespace QResurgence.SST.Security
             }
         }
 
-        private EncryptionKey DecryptWithPrivateKey(byte[] requestContent) =>
-            JsonConvert.DeserializeObject<EncryptionKey>(
-                Encoding.UTF8.GetString(_rsaProvider.Decrypt(requestContent, false)));
-
         private void SendPublicKey(byte[] requester, RouterSocket router)
         {
             var response = new NetMQMessage();
             response.Append(requester);
             response.AppendEmptyFrame();
             response.Append((int) MessageType.SendPublicKey);
-            response.Append(_publicKey);
+            response.Append(_encryptionServer.PublicKey);
 
             router.SendMultipartMessage(response);
         }

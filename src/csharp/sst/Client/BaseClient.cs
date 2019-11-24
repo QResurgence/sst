@@ -19,13 +19,15 @@ namespace QResurgence.SST.Client
     {
         private readonly SecurityNegotiationClient _negotiator;
         private readonly RequestSocket _requestSocket;
+        private SymetricEncryption _encryptor;
 
         /// <summary>
         ///     Initializes an instance of the <see cref="BaseClient" /> class
         /// </summary>
         protected BaseClient()
         {
-            _negotiator = new SecurityNegotiationClient();
+            _encryptor = new SymetricEncryption();
+            _negotiator = new SecurityNegotiationClient(_encryptor);
             _requestSocket = new RequestSocket();
             _requestSocket.Options.Identity = Guid.NewGuid().ToByteArray();
             _requestSocket.Connect("tcp://127.0.0.1:9000");
@@ -40,7 +42,7 @@ namespace QResurgence.SST.Client
             return !_negotiator.Negotiate(_requestSocket)
                 ? new Left<IError, CapabilityClient<TArgument, TReturn>>(new UnsuccessfulNegotiationWithServer())
                 : GetCapabilityFromServer(name)
-                    .Map(info => new CapabilityClient<TArgument, TReturn>(_requestSocket, info, _negotiator));
+                    .Map(info => new CapabilityClient<TArgument, TReturn>(_requestSocket, info, _negotiator, _encryptor));
         }
 
         /// <inheritdoc />
@@ -60,8 +62,8 @@ namespace QResurgence.SST.Client
             switch (messageType)
             {
                 case MessageType.GrantCapability:
-                    var infoJson = _negotiator.Decrypt(response.Pop().ToByteArray());
-                    var info = JsonConvert.DeserializeObject<CapabilityInfo>(Encoding.UTF8.GetString(infoJson));
+                    var infoJson = _encryptor.Decrypt(response.Pop().ToByteArray());
+                    var info = JsonConvert.DeserializeObject<CapabilityInfo>(infoJson);
                     return new Right<IError, CapabilityInfo>(info);
                 case MessageType.Error:
                     var errorContent = response.Pop().ToByteArray();
@@ -75,11 +77,8 @@ namespace QResurgence.SST.Client
         {
             var request = new NetMQMessage();
             request.Append((int) MessageType.GetCapability);
-            request.Append(_negotiator.Encrypt(SerializeCapabilityInfo(new CapabilityInfo(name))));
+            request.Append(_encryptor.Encrypt(JsonConvert.SerializeObject(new CapabilityInfo(name))));
             return request;
         }
-
-        private static byte[] SerializeCapabilityInfo(CapabilityInfo info) =>
-            Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(info));
     }
 }
